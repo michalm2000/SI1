@@ -1,5 +1,5 @@
+import data.ProblemType;
 import models.Population;
-import models.Specimen;
 import services.RandomMethod;
 
 public class FLOSolver {
@@ -9,10 +9,10 @@ public class FLOSolver {
     public static final String flatFlowPath = "src/main/resources/flat_flow.json";
     public static final String hardCostPath = "src/main/resources/hard_cost.json";
     public static final String hardFlowPath = "src/main/resources/hard_flow.json";
-    public static void main(String[] args) {
-        Population population = new Population(10, 3, 3, 9, easyCostPath, easyFlowPath);
-        Population population2 = new Population(10, 1, 12, 12, flatCostPath, flatFlowPath);
-        Population population3 = new Population(10, 5, 6, 24, hardCostPath, hardFlowPath);
+    public static void main(String[] args) throws CloneNotSupportedException {
+        Population population = new Population(100, 3, 3, 9, ProblemType.EASY);
+        Population population2 = new Population(1000, 1, 12, 12, ProblemType.FLAT);
+        Population population3 = new Population(1000, 5, 6, 24, ProblemType.HARD);
 //        for (Specimen specimen: population.getSpecimens()){
 //            System.out.println(specimen.getFitness());
 //        }
@@ -25,10 +25,18 @@ public class FLOSolver {
 //            System.out.println(specimen.getFitness());
 //        }
 //        System.out.println("test");
-//        System.out.println(RandomMethod.getBestRandomSpecimen(1000, 3, 3, 9, easyCostPath, easyFlowPath).getFitness());
+//        System.out.println(RandomMethod.getBestRandomSpecimen(100, 3, 3, 9, easyCostPath, easyFlowPath).getFitness());
 //        System.out.println(RandomMethod.getBestRandomSpecimen(1000, 1, 12, 12, flatCostPath, flatFlowPath).getFitness());
-//        System.out.println(RandomMethod.getBestRandomSpecimen(1000, 5, 6, 24, hardCostPath, hardFlowPath).getFitness());
-        population3.roulette();
-        System.out.println("dupa");
+//        System.out.println(RandomMethod.getBestRandomSpecimen(100, 5, 6, 24, hardCostPath, hardFlowPath).getFitness());
+        System.out.println(population3.bestSpecimenFitness());
+        Population newPopulation = population3.generateNewPopulation();
+
+        for(int i = 0; i < 1000000; i++) {
+            newPopulation = newPopulation.generateNewPopulation();
+            System.out.println("Generation Number: " + i +" " + newPopulation.bestSpecimenFitness());
+        }
+
+
+
     }
 }

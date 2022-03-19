@@ -4,12 +4,11 @@ package models;
 import java.util.*;
 import java.util.stream.IntStream;
 
-public class Specimen implements Comparable<Specimen> {
-    private final Integer[] board;
-    private final int width;
-    private final int height;
-    private final List<Parameter> parameterList;
-    private int fitness;
+public class Specimen implements Comparable<Specimen>{
+    private Integer[] board;
+    private int width;
+    private int height;
+    private List<Parameter> parameterList;
 
 
     public Specimen(int width, int height, int machineCount, List<Parameter> parameterList) {
@@ -26,19 +25,30 @@ public class Specimen implements Comparable<Specimen> {
         for (int i = 0; i < machineCount; i++) {
             this.board[indexes.get(i)] = i;
         }
-        calculateFitness();
     }
 
-    private void calculateFitness(){
-        int result = 0;
-        for (Parameter parameter : parameterList) {
-            result += parameter.getCost() * parameter.getAmount() * getDistanceBetweenMachines(parameter.getSource(), parameter.getDest());
+
+
+
+    public void mutate(){
+        Random random = new Random();
+        int index1 = random.nextInt(board.length);
+        int index2;
+        do {
+            index2 = random.nextInt(board.length);
         }
-        fitness = result;
+        while (index2 == index1);
+        int pom = board[index2];
+        board[index2] = board[index1];
+        board[index1] = pom;
     }
 
-    public int getFitness() {
-        return fitness;
+    public double getFitness() {
+        double result = 0;
+        for (Parameter parameter : parameterList) {
+            result += parameter.getCost() * parameter.getAmount() * (double) getDistanceBetweenMachines(parameter.getSource(), parameter.getDest());
+        }
+        return result;
     }
 
     private int getDistanceBetweenMachines(int machineA, int machineB) {
@@ -51,7 +61,7 @@ public class Specimen implements Comparable<Specimen> {
         return (Math.abs(coordAX - coordBX) + Math.abs(coordAY - coordBY));
     }
 
-    public Integer getBoardCoords(int x, int y) {
+    public int getBoardCoords(int x, int y) {
         if (x >= width || y >= height) {
             throw new IllegalArgumentException("Coordinates exceed array dimension");
         }
@@ -59,13 +69,35 @@ public class Specimen implements Comparable<Specimen> {
 
     }
 
+    private Specimen(){}
+
+
+
+    public Integer[] getBoard(){
+        return board;
+    }
+
+    public void setPlaceOnBoard(int index, int value){
+        board[index] = value;
+    }
+    public int getPlaceFromBoard(int index){ return board[index];}
+
     @Override
     public int compareTo(Specimen o) {
         return compare(this, o);
     }
 
     public static int compare(Specimen x, Specimen y) {
-        return Integer.compare(x.getFitness(), y.getFitness()) * -1;
+        return Double.compare(x.getFitness(), y.getFitness()) * -1;
+    }
+
+   public Specimen clone(){
+        Specimen specimen = new Specimen();
+        specimen.height = height;
+        specimen.width = width;
+        specimen.parameterList = parameterList;
+        specimen.board = board;
+        return specimen;
     }
 }
 
