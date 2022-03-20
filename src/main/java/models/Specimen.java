@@ -96,8 +96,13 @@ public class Specimen implements Comparable<Specimen>{
         specimen.height = height;
         specimen.width = width;
         specimen.parameterList = parameterList;
-        specimen.board = board;
+        specimen.board = board.clone();
         return specimen;
+    }
+
+    @Override
+    public String toString() {
+        return "fitness: " +  getFitness();
     }
 }
 

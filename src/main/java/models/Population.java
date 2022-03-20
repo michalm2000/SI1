@@ -32,22 +32,23 @@ public class Population {
         this.machineCount = machineCount;
     }
 
-    public Population generateNewPopulation(){
-        Population result = new Population(width, height, machineCount,parameterList);
+    public Population generateNewPopulation() {
+        Specimen bestSpecimen = bestSpecimen();
+        Population result = new Population(width, height, machineCount, parameterList);
         result.specimens = new ArrayList<>();
+        result.specimens.add(bestSpecimen);
         while (result.specimens.size() < specimens.size()) {
-            Specimen specimenA = roulette();
-            Specimen specimenB = roulette();
+            Specimen specimenA = tournament(15);
+            Specimen specimenB = tournament(15);
 
-            if(Math.random() > Constants.CROSSOVER_PROBABILITY){
+            if (Math.random() < Constants.CROSSOVER_PROBABILITY) {
                 Specimen child = crossover(specimenA, specimenB);
-                if(Math.random() > Constants.MUTATION_PROBABILITY){
+                if (Math.random() < Constants.MUTATION_PROBABILITY) {
                     child.mutate();
                 }
                 result.specimens.add(child);
-            }
-            else {
-                if (Math.random() > Constants.MUTATION_PROBABILITY) {
+            } else {
+                if (Math.random() < Constants.MUTATION_PROBABILITY) {
                     specimenA.mutate();
                     specimenB.mutate();
                 }
@@ -60,39 +61,39 @@ public class Population {
         return result;
     }
 
-    public Specimen tournament(int numberOfParticipants){
+    public Specimen tournament(int numberOfParticipants) {
         Random random = new Random();
         ArrayList<Integer> chosenIndexes = new ArrayList<>();
         while (chosenIndexes.size() < numberOfParticipants) {
             int index = random.nextInt(specimens.size());
-            if (!chosenIndexes.contains(index)){
+            if (!chosenIndexes.contains(index)) {
                 chosenIndexes.add(index);
             }
         }
         Specimen result = specimens.get(chosenIndexes.get(0));
         for (int i = 1; i < numberOfParticipants; i++) {
             Specimen nextSpecimen = specimens.get(chosenIndexes.get(i));
-            if (result.compareTo(nextSpecimen) < 0){
+            if (result.getFitness() > nextSpecimen.getFitness()) {
                 result = nextSpecimen;
             }
         }
         return result;
     }
 
-    public Specimen roulette(){
+    public Specimen roulette() {
         double denominator = 0;
-        for(int i = 0; i < specimens.size(); i++){
-            denominator += 1/  specimens.get(i).getFitness();
+        for (int i = 0; i < specimens.size(); i++) {
+            denominator += 1 / specimens.get(i).getFitness();
         }
 
         double[] endOfEachPeriod = new double[specimens.size()];
-        endOfEachPeriod[0] = (1/ specimens.get(0).getFitness())/denominator;
-        for(int i = 1; i < specimens.size(); i++){
-            endOfEachPeriod[i] = endOfEachPeriod[i-1] + (1/ specimens.get(i).getFitness())/denominator;
+        endOfEachPeriod[0] = (1 / specimens.get(0).getFitness()) / denominator;
+        for (int i = 1; i < specimens.size(); i++) {
+            endOfEachPeriod[i] = endOfEachPeriod[i - 1] + (1 / specimens.get(i).getFitness()) / denominator;
         }
         double selectedValue = Math.random();
         int i = 0;
-        while (i < endOfEachPeriod.length){
+        while (i < endOfEachPeriod.length) {
             if (endOfEachPeriod[i] > selectedValue) {
                 return specimens.get(i);
             }
@@ -101,58 +102,41 @@ public class Population {
         return specimens.get(i);
     }
 
-    public Specimen crossover(Specimen parentA, Specimen parentB){
+    public Specimen crossover(Specimen parentA, Specimen parentB) {
         Random random = new Random();
         int cutPlace = random.nextInt(parentA.getBoard().length);
         Specimen result = parentA.clone();
-//        ArrayList<Integer> availableMachines = new ArrayList<>();
-//
+        ArrayList<Integer> availableMachines = new ArrayList<>();
+
+        for (int i = cutPlace; i < result.getBoard().length; i++) {
+            availableMachines.add(result.getPlaceFromBoard(i));
+        }
+
+        availableMachines = getAvailableMachinesInOrder(availableMachines, parentB.getBoard());
+
+
+        for (int i = cutPlace; i < result.getBoard().length; i++) {
+            result.setPlaceOnBoard(i, availableMachines.get(i - cutPlace));
+        }
+
 //        for (int i = cutPlace; i < result.getBoard().length; i++){
-//            availableMachines.add(result.getPlaceFromBoard(i));
+//            boolean possibleSwap = true;
+//            for (int j = 0; j < cutPlace; j++){
+//                if (parentA.getBoard()[j] == -1 || parentB.getBoard()[i] == -1 || Objects.equals(parentA.getBoard()[j], parentB.getBoard()[i])){
+//                    possibleSwap = false;
+//                }
+//            }
+//            if (possibleSwap){
+//                result.setPlaceOnBoard(i, parentB.getBoard()[i]);
+//            }
 //        }
-//
-//        availableMachines = getAvailableMachinesInOrder(availableMachines, parentB.getBoard());
-//
-//
-//        for (int i = cutPlace; i < result.getBoard().length ; i++) {
-//            result.setPlaceOnBoard(i, availableMachines.get(i-cutPlace));
-//        }
-
-        for (int i = cutPlace; i < result.getBoard().length; i++){
-            boolean possibleSwap = true;
-            for (int j = 0; j < cutPlace; j++){
-                if (parentA.getBoard()[j] == -1 || parentB.getBoard()[i] == -1 || Objects.equals(parentA.getBoard()[j], parentB.getBoard()[i])){
-                    possibleSwap = false;
-                }
-            }
-            if (possibleSwap){
-                result.setPlaceOnBoard(i, parentB.getBoard()[i]);
-            }
-        }
-        return result;
-    }
-
-    private double averageFitness(){
-        double result = 0;
-        for (int i = 0; i < specimens.size(); i++) {
-            result += specimens.get(i).getFitness();
-        }
         return result;
     }
 
 
-    public void mutate(double probability){
-        for(int i = 0; i < this.specimens.size(); i++){
-            double random = Math.random();
-            if (random <= probability){
-                specimens.get(i).mutate();
-            }
-        }
-    }
-
-    private ArrayList<Integer> getAvailableMachinesInOrder(List<Integer> availableMachines,  Integer[] array){
+    private ArrayList<Integer> getAvailableMachinesInOrder(List<Integer> availableMachines, Integer[] array) {
         ArrayList<Integer> result = new ArrayList<>();
-        for(int i = 0; i < array.length; i++){
+        for (int i = 0; i < array.length; i++) {
             int element = array[i];
             if (availableMachines.contains(element)) {
                 result.add(element);
@@ -163,20 +147,30 @@ public class Population {
     }
 
 
-
     public List<Specimen> getSpecimens() {
         return specimens;
     }
 
-    public Specimen getSpecimen(int index){
+    public Specimen getSpecimen(int index) {
         return specimens.get(index);
     }
 
     public double bestSpecimenFitness() {
         double result = Double.MAX_VALUE;
-        for (int i = 0; i < specimens.size(); i++){
+        for (int i = 0; i < specimens.size(); i++) {
             result = Double.min(result, specimens.get(i).getFitness());
         }
         return result;
     }
+
+    public Specimen bestSpecimen() {
+        Specimen result = specimens.get(0);
+        for (int i = 1; i < specimens.size(); i++) {
+            if (result.getFitness() > specimens.get(i).getFitness()) {
+                result = specimens.get(i);
+            }
+        }
+        return result;
+    }
 }
+
